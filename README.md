@@ -90,20 +90,3 @@ A candidate with missing mandatory requirements may also receive a "Not Suitable
 - Sets
 
 No external Python packages or third-party APIs are required.
-
----
-
-## 💻 Requirements
-
-Python 3.x
-
-Tkinter is normally included with standard Python installations.
-
----
-
-## ▶️ How to Run
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/TRACE-Resume-Analyzer.git
