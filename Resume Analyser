@@ -1,0 +1,668 @@
+import tkinter as tk
+from tkinter import messagebox
+
+
+# ============================================================
+# TRACE - Transparent Resume Alignment and Coverage Engine
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Common skill variations
+# ------------------------------------------------------------
+SKILL_VARIATIONS = {
+    "java": ["java", "java programming", "java developer"],
+    "python": ["python", "python programming", "python developer"],
+    "sql": ["sql", "mysql", "database", "sql database"],
+    "oop": ["oop", "object oriented programming",
+            "object-oriented programming"],
+    "git": ["git", "github", "version control"],
+    "docker": ["docker", "containerization"],
+    "javascript": ["javascript", "js"],
+    "html": ["html", "html5"],
+    "css": ["css", "css3"],
+    "machine learning": ["machine learning", "ml"],
+    "c": ["c", "c programming"],
+    "cpp": ["c++", "cpp", "c plus plus"],
+}
+
+
+# ------------------------------------------------------------
+# Priority words
+# ------------------------------------------------------------
+MANDATORY_WORDS = [
+    "must",
+    "required",
+    "mandatory",
+    "essential",
+    "minimum",
+    "need",
+    "needs",
+    "should have"
+]
+
+PREFERRED_WORDS = [
+    "preferred",
+    "prefer",
+    "desirable",
+    "recommended"
+]
+
+OPTIONAL_WORDS = [
+    "optional",
+    "additional",
+    "bonus",
+    "good to have",
+    "advantage"
+]
+
+
+# ------------------------------------------------------------
+# Requirement object
+# ------------------------------------------------------------
+class Requirement:
+    def __init__(self, name, priority, source_text):
+        self.name = name
+        self.priority = priority
+        self.source_text = source_text
+        self.status = "MISSING"
+        self.evidence = "Not found"
+        self.score = 0
+        self.max_score = 0
+
+
+# ------------------------------------------------------------
+# Normalize text
+# ------------------------------------------------------------
+def normalize(text):
+    text = text.lower()
+
+    replacements = {
+        "object-oriented": "object oriented",
+        "object oriented programming": "oop",
+        "machine learning": "machine learning",
+        "javascript": "javascript",
+        "c plus plus": "cpp"
+    }
+
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    punctuation = ",.;:!?()[]{}\"'/-"
+
+    for char in punctuation:
+        text = text.replace(char, " ")
+
+    return " ".join(text.split())
+
+
+# ------------------------------------------------------------
+# Determine priority
+# ------------------------------------------------------------
+def determine_priority(sentence):
+    text = normalize(sentence)
+
+    for word in MANDATORY_WORDS:
+        if word in text:
+            return "MANDATORY"
+
+    for word in PREFERRED_WORDS:
+        if word in text:
+            return "PREFERRED"
+
+    for word in OPTIONAL_WORDS:
+        if word in text:
+            return "OPTIONAL"
+
+    # Default requirement priority
+    return "MANDATORY"
+
+
+# ------------------------------------------------------------
+# Extract skills from text
+# ------------------------------------------------------------
+def extract_skills(text):
+    text = normalize(text)
+
+    found = []
+
+    for skill, variations in SKILL_VARIATIONS.items():
+
+        for variation in variations:
+            variation = normalize(variation)
+
+            if variation in text:
+                found.append(skill)
+                break
+
+    return found
+
+
+# ------------------------------------------------------------
+# Extract experience
+# ------------------------------------------------------------
+def extract_years(text):
+    words = normalize(text).split()
+
+    for i in range(len(words) - 1):
+
+        if words[i].isdigit():
+
+            if words[i + 1] in ["year", "years", "yr", "yrs"]:
+                return int(words[i])
+
+    return 0
+
+
+# ------------------------------------------------------------
+# Extract required experience from JD
+# ------------------------------------------------------------
+def extract_required_experience(jd):
+    text = normalize(jd)
+    words = text.split()
+
+    for i in range(len(words) - 1):
+
+        if words[i].isdigit():
+
+            if words[i + 1] in ["year", "years", "yr", "yrs"]:
+                return int(words[i])
+
+    return 0
+
+
+# ------------------------------------------------------------
+# Find evidence section
+# ------------------------------------------------------------
+def find_evidence(skill, resume):
+    resume_lower = normalize(resume)
+
+    variations = SKILL_VARIATIONS.get(skill, [skill])
+
+    for variation in variations:
+
+        variation = normalize(variation)
+
+        if variation in resume_lower:
+
+            # Try to identify the section containing the skill
+            lines = resume.split("\n")
+
+            for line in lines:
+
+                if variation in normalize(line):
+                    return line.strip()
+
+            return variation
+
+    return None
+
+
+# ------------------------------------------------------------
+# Extract requirements
+# ------------------------------------------------------------
+def extract_requirements(jd):
+    requirements = []
+
+    skills = extract_skills(jd)
+
+    lines = jd.split("\n")
+
+    for skill in skills:
+
+        source = ""
+
+        for line in lines:
+            if skill in normalize(line):
+                source = line.strip()
+                break
+
+        priority = determine_priority(source)
+
+        requirement = Requirement(
+            skill,
+            priority,
+            source
+        )
+
+        requirements.append(requirement)
+
+    return requirements
+
+
+# ------------------------------------------------------------
+# Analyze requirement
+# ------------------------------------------------------------
+def analyze_requirement(requirement, resume):
+
+    evidence = find_evidence(
+        requirement.name,
+        resume
+    )
+
+    if evidence:
+
+        requirement.status = "COVERED"
+        requirement.evidence = evidence
+
+    else:
+
+        requirement.status = "MISSING"
+        requirement.evidence = "Not found"
+
+
+# ------------------------------------------------------------
+# Analyze experience
+# ------------------------------------------------------------
+def analyze_experience(jd, resume):
+
+    required_years = extract_required_experience(jd)
+    candidate_years = extract_years(resume)
+
+    if required_years == 0:
+        return None
+
+    requirement = Requirement(
+        str(required_years) + " years experience",
+        "MANDATORY",
+        jd
+    )
+
+    requirement.max_score = 5
+
+    if candidate_years >= required_years:
+
+        requirement.status = "EXCEEDED" \
+            if candidate_years > required_years \
+            else "COVERED"
+
+        requirement.evidence = (
+            "Candidate has " +
+            str(candidate_years) +
+            " years of experience"
+        )
+
+    elif candidate_years > 0:
+
+        requirement.status = "PARTIALLY COVERED"
+
+        requirement.evidence = (
+            "Candidate has " +
+            str(candidate_years) +
+            " years; required " +
+            str(required_years)
+        )
+
+    else:
+
+        requirement.status = "MISSING"
+        requirement.evidence = "Experience not found"
+
+    return requirement
+
+
+# ------------------------------------------------------------
+# Calculate weighted score
+# ------------------------------------------------------------
+def calculate_score(requirements):
+
+    total = 0
+    obtained = 0
+
+    for requirement in requirements:
+
+        if requirement.priority == "MANDATORY":
+            weight = 5
+
+        elif requirement.priority == "PREFERRED":
+            weight = 3
+
+        else:
+            weight = 1
+
+        requirement.max_score = weight
+
+        total += weight
+
+        if requirement.status in ["COVERED", "EXCEEDED"]:
+            requirement.score = weight
+
+        elif requirement.status == "PARTIALLY COVERED":
+            requirement.score = weight / 2
+
+        else:
+            requirement.score = 0
+
+        obtained += requirement.score
+
+    if total == 0:
+        return 0
+
+    return (obtained / total) * 100
+
+
+# ------------------------------------------------------------
+# Recommendation
+# ------------------------------------------------------------
+def get_recommendation(score, requirements):
+
+    critical_missing = False
+
+    for requirement in requirements:
+
+        if (
+            requirement.priority == "MANDATORY"
+            and requirement.status == "MISSING"
+        ):
+            critical_missing = True
+
+    if critical_missing and score < 75:
+        return "NOT SUITABLE"
+
+    if score >= 90:
+        return "HIGHLY SUITABLE"
+
+    elif score >= 75:
+        return "SUITABLE"
+
+    elif score >= 60:
+        return "MODERATELY SUITABLE"
+
+    elif score >= 40:
+        return "LOW SUITABILITY"
+
+    else:
+        return "NOT SUITABLE"
+
+
+# ------------------------------------------------------------
+# Generate report
+# ------------------------------------------------------------
+def generate_report(jd, resume):
+
+    requirements = extract_requirements(jd)
+
+    for requirement in requirements:
+        analyze_requirement(
+            requirement,
+            resume
+        )
+
+    experience = analyze_experience(
+        jd,
+        resume
+    )
+
+    if experience:
+        requirements.append(experience)
+
+    score = calculate_score(requirements)
+
+    recommendation = get_recommendation(
+        score,
+        requirements
+    )
+
+    report = ""
+
+    report += "=" * 60 + "\n"
+    report += "       TRACE - REQUIREMENT COVERAGE REPORT\n"
+    report += "=" * 60 + "\n\n"
+
+    report += "REQUIREMENT ANALYSIS\n"
+    report += "-" * 60 + "\n"
+
+    for i, requirement in enumerate(
+        requirements, 1
+    ):
+
+        report += "\n"
+        report += str(i) + ". " + requirement.name + "\n"
+        report += "   Priority : " + requirement.priority + "\n"
+        report += "   Status   : " + requirement.status + "\n"
+        report += "   Evidence : " + requirement.evidence + "\n"
+        report += "   Score    : " + str(
+            round(requirement.score, 2)
+        ) + "/" + str(
+            requirement.max_score
+        ) + "\n"
+
+    report += "\n"
+    report += "-" * 60 + "\n"
+
+    report += "OVERALL SCORE : " + str(
+        round(score, 2)
+    ) + "%\n"
+
+    report += "RECOMMENDATION : " + recommendation + "\n"
+
+    report += "-" * 60 + "\n"
+
+    report += "\nMISSING REQUIREMENTS\n"
+
+    missing_found = False
+
+    for requirement in requirements:
+
+        if requirement.status == "MISSING":
+
+            report += "  - " + requirement.name + "\n"
+            missing_found = True
+
+    if not missing_found:
+        report += "  None\n"
+
+    report += "\nMATCHED REQUIREMENTS\n"
+
+    matched_found = False
+
+    for requirement in requirements:
+
+        if requirement.status in [
+            "COVERED",
+            "EXCEEDED"
+        ]:
+
+            report += "  + " + requirement.name + "\n"
+            matched_found = True
+
+    if not matched_found:
+        report += "  None\n"
+
+    report += "\n" + "=" * 60
+
+    return report
+
+
+# ============================================================
+# GUI
+# ============================================================
+
+def analyze_button():
+
+    jd = job_text.get("1.0", tk.END).strip()
+    resume = resume_text.get("1.0", tk.END).strip()
+
+    if not jd or not resume:
+
+        messagebox.showwarning(
+            "Missing Input",
+            "Please enter both Job Description and Resume."
+        )
+
+        return
+
+    result = generate_report(
+        jd,
+        resume
+    )
+
+    result_text.config(state=tk.NORMAL)
+
+    result_text.delete(
+        "1.0",
+        tk.END
+    )
+
+    result_text.insert(
+        tk.END,
+        result
+    )
+
+    result_text.config(state=tk.DISABLED)
+
+
+def clear_button():
+
+    job_text.delete(
+        "1.0",
+        tk.END
+    )
+
+    resume_text.delete(
+        "1.0",
+        tk.END
+    )
+
+    result_text.config(
+        state=tk.NORMAL
+    )
+
+    result_text.delete(
+        "1.0",
+        tk.END
+    )
+
+    result_text.config(
+        state=tk.DISABLED
+    )
+
+
+# ============================================================
+# Main Window
+# ============================================================
+
+root = tk.Tk()
+
+root.title(
+    "TRACE - Resume Alignment Engine"
+)
+
+root.geometry(
+    "1100x750"
+)
+
+
+title = tk.Label(
+    root,
+    text="TRACE - Transparent Resume Alignment and Coverage Engine",
+    font=("Arial", 18, "bold")
+)
+
+title.pack(pady=10)
+
+
+# Job Description
+tk.Label(
+    root,
+    text="JOB DESCRIPTION",
+    font=("Arial", 12, "bold")
+).pack()
+
+job_text = tk.Text(
+    root,
+    height=8,
+    width=120
+)
+
+job_text.pack(
+    padx=20,
+    pady=5
+)
+
+
+# Resume
+tk.Label(
+    root,
+    text="RESUME",
+    font=("Arial", 12, "bold")
+).pack()
+
+resume_text = tk.Text(
+    root,
+    height=8,
+    width=120
+)
+
+resume_text.pack(
+    padx=20,
+    pady=5
+)
+
+
+# Buttons
+button_frame = tk.Frame(root)
+
+button_frame.pack(
+    pady=10
+)
+
+
+analyze = tk.Button(
+    button_frame,
+    text="ANALYZE RESUME",
+    command=analyze_button,
+    font=("Arial", 11, "bold"),
+    padx=20,
+    pady=8
+)
+
+analyze.pack(
+    side=tk.LEFT,
+    padx=10
+)
+
+
+clear = tk.Button(
+    button_frame,
+    text="CLEAR",
+    command=clear_button,
+    font=("Arial", 11),
+    padx=20,
+    pady=8
+)
+
+clear.pack(
+    side=tk.LEFT,
+    padx=10
+)
+
+
+# Result
+tk.Label(
+    root,
+    text="REQUIREMENT COVERAGE REPORT",
+    font=("Arial", 12, "bold")
+).pack()
+
+
+result_text = tk.Text(
+    root,
+    height=20,
+    width=120,
+    state=tk.DISABLED
+)
+
+result_text.pack(
+    padx=20,
+    pady=5,
+    fill=tk.BOTH,
+    expand=True
+)
+
+
+root.mainloop()
+
+
+
+…
