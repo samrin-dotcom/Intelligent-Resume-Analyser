@@ -1,21 +1,20 @@
-# Intelligent-Resume-Analyser
-# TRACE - Transparent Resume Alignment and Coverage Engine
+ Intelligent-Resume-Analyser
+ TRACE - Transparent Resume Alignment and Coverage Engine
 
 TRACE is a Python-based Intelligent Resume Analyzer that compares a Job Description (JD) with a candidate's resume and evaluates how well the candidate matches the job requirements.
 
 The system identifies relevant skills, determines requirement priority, checks candidate experience, calculates a weighted match score, and provides a suitability recommendation.
 
----
 
-## 🎯 Project Objective
+Project Objective
 
 The main objective of TRACE is to reduce the manual effort involved in resume screening.
 
 Recruiters often need to review a large number of resumes for a single job opening. TRACE provides a simple automated approach to analyze resumes against job requirements and generate a transparent requirement coverage report.
 
----
 
-## 🚀 Features
+
+ Features
 
 - Job Description analysis
 - Resume analysis
@@ -34,7 +33,7 @@ Recruiters often need to review a large number of resumes for a single job openi
 
 ---
 
-## 🧠 How It Works
+ How It Works
 
 The system follows these steps:
 
@@ -49,9 +48,9 @@ The system follows these steps:
 9. Missing and matched requirements are displayed.
 10. A final suitability recommendation is generated.
 
----
 
-## 📊 Requirement Priority
+
+ Requirement Priority
 
 TRACE assigns different weights to different types of requirements.
 
@@ -63,9 +62,9 @@ TRACE assigns different weights to different types of requirements.
 
 The weighted score is calculated based on the candidate's coverage of the identified requirements.
 
----
 
-## 📈 Recommendation Levels
+
+Recommendation Levels
 
 | Score | Recommendation |
 |------:|----------------|
@@ -77,9 +76,7 @@ The weighted score is calculated based on the candidate's coverage of the identi
 
 A candidate with missing mandatory requirements may also receive a "Not Suitable" recommendation depending on the calculated score.
 
----
-
-## 🛠️ Technologies Used
+ Technologies Used
 
 - Python
 - Tkinter
